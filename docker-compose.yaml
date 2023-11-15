@@ -1,0 +1,37 @@
+
+version: "3"
+
+services:
+  web:
+    build: 
+      context: ./app
+    command: flask --app app run --debug --host="0.0.0.0"
+    ports:
+      - "5000:5000"
+    links:
+      - redis
+    depends_on:
+      - redis
+    environment:
+      - redis_url=redis
+    volumes:
+      - ./app:/app
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  worker:
+    build:
+      context: ./app
+    entrypoint: celery
+    command: -A celery_app.celery worker --loglevel=info
+    environment:
+      - redis_url=redis
+    volumes:
+      - ./app:/app
+    links:
+      - redis
+    depends_on:
+      - redis
